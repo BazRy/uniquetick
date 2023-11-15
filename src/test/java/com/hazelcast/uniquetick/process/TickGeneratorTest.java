@@ -2,60 +2,87 @@ package com.hazelcast.uniquetick.process;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TickGeneratorTest {
 
     @Test
-    void getUniqueTickValuesBasicTest() {
+    void getUniqueTickValues_SingleThreaded() {
+
         //assemble
         final TickGenerator tickGenerator = new TickGenerator();
-        long tick = 0;
-        final long expectedTick = 4;
+        long currentTick = 0;
+        final long expectedFinalTickValue = 49;
+        final LongStream stream = LongStream.range(0, expectedFinalTickValue + 1);
 
         //act
-        for (int i = 0; i <= expectedTick; i++) {
-            tick = tickGenerator.getUniqueTick();
-            System.out.println("Tick: " + tick);
-        }
+        currentTick = (stream.map(x ->
+               tickGenerator.getUniqueTick()
+        ).max()).getAsLong();
 
         //assert
-        assertEquals(expectedTick, tick);
+        assertEquals(expectedFinalTickValue, currentTick);
     }
 
     @Test
-    void getUniqueTickValuesMultiThreadedTest() throws Exception {
+    void getUniqueTickValues_RunConcurrentlyNonWaitingStart() throws InterruptedException {
+
         //assemble
-        final CountDownLatch latch = new CountDownLatch(100);
+        final int expectedTotalUniqueTicks= 100;
+        final CountDownLatch latch = new CountDownLatch(expectedTotalUniqueTicks);
+        final List<Long> result = new ArrayList<>();
         final TickGenerator tickGenerator = new TickGenerator();
-        final ExecutorService service = Executors.newFixedThreadPool(10);
 
-        for (int i = 0; i < 100; i++) {
-            service.submit(new Processor(latch, tickGenerator));
-        }
+        //act
+        final List<Thread> workers = Stream
+                .generate(() -> new Thread(new NonWaitingTickValueWorker(tickGenerator, latch, result)))
+                .limit(100)
+                .collect(Collectors.toList());
+
+        workers.forEach(Thread::start);
         latch.await();
-        System.out.println("Completed");
+
+        //assert
+        assertResult(result, expectedTotalUniqueTicks);
     }
+    @Test
+    public void getUniqueTickValues_RunConcurrentlyWaitingStart()
+            throws InterruptedException {
 
-    class Processor implements Runnable {
+        //assemble
+        final int expectedTotalUniqueTicks= 100;
+        final List<Long> result = new ArrayList<>();
+        final CountDownLatch readyThreadCounter = new CountDownLatch(expectedTotalUniqueTicks);
+        final CountDownLatch callerBlocker = new CountDownLatch(1);
+        final CountDownLatch threadsCompleteCounter = new CountDownLatch(expectedTotalUniqueTicks);
+        final TickGenerator tickGenerator = new TickGenerator();
 
-        private final CountDownLatch latch;
-        private final TickGenerator tickGenerator;
+        //act
+        List<Thread> workers = Stream
+                .generate(() -> new Thread(new WaitingTickValueWorker(
+                        tickGenerator, readyThreadCounter, callerBlocker, threadsCompleteCounter, result)))
+                .limit(expectedTotalUniqueTicks)
+                .collect(Collectors.toList());
 
-        Processor (CountDownLatch latch, TickGenerator tickGenerator) {
-            this.latch = latch;
-            this.tickGenerator = tickGenerator;
-        }
-        long tick = 0;
-        @Override
-        public void run() {
-            tick = tickGenerator.getUniqueTick();
-            System.out.println("Tick: " + tick);
-            latch.countDown();
-        }
+        workers.forEach(Thread::start);
+        readyThreadCounter.await();
+        callerBlocker.countDown();
+        threadsCompleteCounter.await();
+
+        //assert
+        assertResult(result, expectedTotalUniqueTicks);
+    }
+    private void assertResult(List<Long> result, int expectedTotalUniqueTicks) {
+        assertEquals(result.size(), expectedTotalUniqueTicks, "Unexpected result size: " + result.size());
+        List<Long> expectedValuesInResult = LongStream.rangeClosed(0, expectedTotalUniqueTicks - 1).boxed().collect(Collectors.toList());
+        assertTrue(result.containsAll(expectedValuesInResult) && expectedValuesInResult.containsAll(result));
     }
 }
