@@ -24,7 +24,7 @@ public class TickGeneratorIntTest {
         final int expectedTotalUniqueTicks= 10;
         final CountDownLatch latch = new CountDownLatch(expectedTotalUniqueTicks);
         final List<Long> result = new ArrayList<>();
-        int successCode = 200;
+        final int successCode = 200;
 
         // assemble
         Runnable runnable = () -> {
