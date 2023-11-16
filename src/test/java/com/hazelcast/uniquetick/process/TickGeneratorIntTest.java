@@ -14,11 +14,12 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TickGeneratorIntTest {
 
     @Test
-    public void endpointTest () throws Exception {
+    public void endpointTestConcurrentTest () throws Exception {
 
         final int expectedTotalUniqueTicks= 10;
         final CountDownLatch latch = new CountDownLatch(expectedTotalUniqueTicks);
@@ -29,7 +30,7 @@ public class TickGeneratorIntTest {
         Runnable runnable = () -> {
             try {
                 HttpUriRequest request = new HttpGet(
-                        "http://ec2-52-56-233-81.eu-west-2.compute.amazonaws.com:8080/getUniqueTick");
+                        "http://52.56.233.81:8080/getUniqueTick");
                 HttpResponse response = HttpClientBuilder.create().build().execute(request);
                 int statusCode = response.getStatusLine().getStatusCode();
                 if (statusCode == successCode) {
@@ -37,21 +38,23 @@ public class TickGeneratorIntTest {
                     result.add(tickValue);
                 }
             } catch (IOException ioe) {
-              //handle better
-              ioe.printStackTrace();
+                //handle better
+                ioe.printStackTrace();
+            } finally {
+                latch.countDown();
             }
         };
 
         // act
         final List<Thread> workers = Stream
                 .generate(() -> new Thread(runnable))
-                .limit(100)
+                .limit(expectedTotalUniqueTicks)
                 .collect(Collectors.toList());
 
         workers.forEach(Thread::start);
         latch.await();
 
         //assert
-        System.out.println(result);
+        assertEquals(expectedTotalUniqueTicks, result.size());
     }
 }

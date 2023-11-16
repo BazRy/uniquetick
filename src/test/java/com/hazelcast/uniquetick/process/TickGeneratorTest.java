@@ -44,7 +44,7 @@ public class TickGeneratorTest {
         //act
         final List<Thread> workers = Stream
                 .generate(() -> new Thread(new NonWaitingTickValueWorker(tickGenerator, latch, result)))
-                .limit(100)
+                .limit(expectedTotalUniqueTicks)
                 .collect(Collectors.toList());
 
         workers.forEach(Thread::start);
