@@ -81,7 +81,7 @@ public class TickGeneratorTest {
         assertResult(result, expectedTotalUniqueTicks);
     }
     private void assertResult(List<Long> result, int expectedTotalUniqueTicks) {
-        assertEquals(result.size(), expectedTotalUniqueTicks, "Unexpected result size: " + result.size());
+        assertEquals(expectedTotalUniqueTicks, result.size(), "Unexpected result size: " + result.size());
         List<Long> expectedValuesInResult = LongStream.rangeClosed(0, expectedTotalUniqueTicks - 1).boxed().collect(Collectors.toList());
         assertTrue(result.containsAll(expectedValuesInResult) && expectedValuesInResult.containsAll(result));
     }

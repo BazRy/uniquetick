@@ -18,7 +18,7 @@ public class UniqueTickController {
         this.tickGenerator = tickGenerator;
     }
 
-    @GetMapping("/getUniqueTick")
+    @GetMapping("/uniqueTick")
     public long getUniqueTick() {
         return tickGenerator.getUniqueTick();
     }
