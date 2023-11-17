@@ -25,6 +25,7 @@ public class TickGenerator {
         } catch (InterruptedException ie) {
             ie.printStackTrace();
         }
+        //return the actual value from the counter or -1 if it wasn't possible to get the lock (interrupted or exceeded wait time)
         return returnValue;
     }
 }
