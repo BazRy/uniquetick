@@ -2,6 +2,7 @@ package com.hazelcast.uniquetick.process;
 
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 @Component
@@ -10,14 +11,20 @@ public class TickGenerator {
     private Long tick = Long.valueOf(0);
     private final Lock lock = new ReentrantLock();
 
-    public long getUniqueTick ()  {
-        lock.lock();
+    public long getUniqueTick () {
+        long returnValue = -1;
         try {
-            long value = tick.longValue();
-            tick++;
-            return value;
-        } finally {
-            lock.unlock();
+            if (lock.tryLock(1, TimeUnit.SECONDS)) {
+                try {
+                    returnValue = tick.longValue();
+                    tick++;
+                } finally {
+                    lock.unlock();
+                }
+            }
+        } catch (InterruptedException ie) {
+            ie.printStackTrace();
         }
+        return returnValue;
     }
 }
