@@ -30,7 +30,7 @@ public class TickGeneratorIntTest {
         Runnable runnable = () -> {
             try {
                 HttpUriRequest request = new HttpGet(
-                        "http://52.56.233.81:8080/getUniqueTick");
+                        "http://52.56.233.81:8080/uniqueTick");
                 HttpResponse response = HttpClientBuilder.create().build().execute(request);
                 int statusCode = response.getStatusLine().getStatusCode();
                 if (statusCode == successCode) {
