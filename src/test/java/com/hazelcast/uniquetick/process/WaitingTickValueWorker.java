@@ -22,14 +22,14 @@ public class WaitingTickValueWorker implements Runnable{
 
     @Override
     public void run() {
-        threadReadyToWorkCounter.countDown();
+        threadReadyToWorkCounter.countDown(); //countdown that this worker is ready
         try {
-            callerBlocker.await();
-            result.add(tickGenerator.getUniqueTick());
+            callerBlocker.await(); //but we cannot run this method as we are blocked,  until a countdown has occurred
+            result.add(tickGenerator.getUniqueTick());  //all threads ready so above latch is open,  now let thread run
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
-            threadsCompleteCounter.countDown();
+            threadsCompleteCounter.countDown(); //countdown this latch
         }
     }
 }

@@ -14,7 +14,7 @@ public class TickGenerator {
     public long getUniqueTick () {
         long returnValue = -1;
         try {
-            if (lock.tryLock(1, TimeUnit.SECONDS)) {
+            if (lock.tryLock(1, TimeUnit.MILLISECONDS)) {
                 try {
                     returnValue = tick.longValue();
                     tick++;

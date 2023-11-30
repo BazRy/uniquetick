@@ -72,13 +72,13 @@ public class TickGeneratorTest {
                 .limit(expectedTotalUniqueTicks)
                 .collect(Collectors.toList());
 
-        workers.forEach(Thread::start);
-        readyThreadCounter.await();
-        callerBlocker.countDown();
-        threadsCompleteCounter.await();
+        workers.forEach(Thread::start); //start all threads,  this will execute the run method
+        readyThreadCounter.await(); //block here until all threads have counted down,  i.e they are ready
+        callerBlocker.countDown(); // all threads are ready so now let them loose
+        threadsCompleteCounter.await(); //but block here until all threads have completed
 
         //assert
-        assertResult(result, expectedTotalUniqueTicks);
+        assertResult(result, expectedTotalUniqueTicks);  //all threads completed so assert result
     }
     private void assertResult(List<Long> result, int expectedTotalUniqueTicks) {
         assertEquals(expectedTotalUniqueTicks, result.size(), "Unexpected result size: " + result.size());
